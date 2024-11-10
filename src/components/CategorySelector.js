@@ -6,14 +6,16 @@ import Pusher from 'pusher-js';
 
 const CategorySelector = () => {
   const [categories, setCategories] = useState([
-    { id: 1, title: 'Category 1', subtitle: 'Subtitle 1', selected: false, code: null },
-    { id: 2, title: 'Category 2', subtitle: 'Subtitle 2', selected: false, code: null },
-    { id: 3, title: 'Category 3', subtitle: 'Subtitle 3', selected: false, code: null },
-    { id: 4, title: 'Category 4', subtitle: 'Subtitle 4', selected: false, code: null },
-    { id: 5, title: 'Category 5', subtitle: 'Subtitle 5', selected: false, code: null },
-    { id: 6, title: 'Category 6', subtitle: 'Subtitle 6', selected: false, code: null },
-    { id: 7, title: 'Category 7', subtitle: 'Subtitle 7', selected: false, code: null },
-    { id: 8, title: 'Category 8', subtitle: 'Subtitle 8', selected: false, code: null },
+    { "id": 1, "title": "Something to add to your latest 'budol'", "subtitle": "Impulse items like quirky mini perfumes or stylish little luxuries", "selected": false, "code": null },
+    { "id": 2, "title": "Perfect for Saturdays", "subtitle": "Mga gamit para sa \"Walang kapaguran\" moments, from cozy blankets, self-care items to hobby starter packs", "selected": false, "code": null },
+    { "id": 3, "title": "Something every tito/tita would carry", "subtitle": "Items that are handy for travel, like travel kits, band-aids, essential oils, or a mini sewing kit", "selected": false, "code": null },
+    { "id": 4, "title": "Balik-alindog pero di pa ngayon", "subtitle": "Health-related gifts like water bottles, fitness journals, or stretching bands", "selected": false, "code": null },
+    { "id": 5, "title": "Something na hindi obvious pero i will appreciate 10 years from now", "subtitle": "Thoughtful keepsakes, like items that gain value with time", "selected": false, "code": null },
+    { "id": 6, "title": "Sikat nung 90's", "subtitle": "Throwback treasures like Tamagotchi, pogs, or plastic balloon na magpapa-nostalgic sa 'yo", "selected": false, "code": null },
+    { "id": 7, "title": "Something to share with friends and family", "subtitle": "Bonding essentials like board games, party favors, o kaya yung mga picture frames na puno ng memories", "selected": false, "code": null },
+    { "id": 8, "title": "Pang-beast mode sa work", "subtitle": "Items for productivity, like a desktop toy, mini whiteboard or quirky office supplies", "selected": false, "code": null },
+    { "id": 9, "title": "Pang-reset ng good vibes", "subtitle": "Books, fresh-start journals or motivational planners, meditation apps are great here", "selected": false, "code": null },
+    { "id": 10, "title": "Something out of this world", "subtitle": "Mga items na mapapasabi ka ng \"Saan mo 'to nakita?!\"", "selected": false, "code": null }
   ]);
 
   const [deviceId, setDeviceId] = useState(null);
@@ -26,6 +28,47 @@ const CategorySelector = () => {
   const [usedCodes] = useState(new Set());
   const [pressTimer, setPressTimer] = useState(null);
   const [progressInterval, setProgressInterval] = useState(null);
+
+  // Fetch initial state of categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/selection');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const data = await response.json();
+        
+        // If categories exist in DB, update state
+        if (data.length > 0) {
+          setCategories(prevCategories => 
+            prevCategories.map(category => {
+              const dbCategory = data.find(c => c.id === category.id);
+              if (dbCategory) {
+                return {
+                  ...category,
+                  selected: dbCategory.selected,
+                  code: dbCategory.code
+                };
+              }
+              return category;
+            })
+          );
+        } else {
+          // Initialize database with categories if it's empty
+          await fetch('/api/selection/init', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ categories }),
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY, {
