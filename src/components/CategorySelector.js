@@ -267,7 +267,7 @@ const CategorySelector = () => {
                   </p>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Please save this code. You'll need it to verify your selection.
+                  Please save this code. You&apos;ll need it to verify your selection.
                 </p>
               </div>
             </>
