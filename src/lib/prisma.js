@@ -1,7 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = global.prisma || new PrismaClient()
+const globalForPrisma = global
 
-if (process.env.NODE_ENV === 'development') global.prisma = prisma
+if (!globalForPrisma.prisma) {
+  globalForPrisma.prisma = new PrismaClient()
+}
+
+const prisma = globalForPrisma.prisma
 
 export default prisma
