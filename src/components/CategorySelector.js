@@ -212,6 +212,10 @@ const CategorySelector = () => {
 
   return (
      <>
+
+      <div className="max-w-md mx-auto p-4 text-center text-white">
+        <img src="https://www.botbros.ai/images/bb-logo.png" className="inline" width="60%" />
+      </div>
       <div className="max-w-md mx-auto p-4">
         {categories.map((category) => {
           const isPressed = pressedId === category.id;
@@ -272,7 +276,7 @@ const CategorySelector = () => {
               <div className="text-center py-6">
                 <div className="mb-6">
                   <p className="text-sm text-gray-600">
-                    You have already made a selection. Each device can only select one category.
+                    You have already made a selection. Each person can only select one category.
                   </p>
                   {currentSelection && (
                     <>
@@ -290,9 +294,6 @@ const CategorySelector = () => {
             </>
           ) : (
             <>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Category Selected!</AlertDialogTitle>
-              </AlertDialogHeader>
               <div className="text-center py-6">
                 <div className="mb-6">
                   <p className="text-sm text-gray-600 mb-1">You have selected:</p>
