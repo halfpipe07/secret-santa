@@ -31,6 +31,9 @@ const CategorySelector = () => {
   const [progressInterval, setProgressInterval] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -111,6 +114,30 @@ const CategorySelector = () => {
     }
   }, []);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/selection');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(prevCategories => 
+          prevCategories.map(category => {
+            const dbCategory = data.find(c => c.id === category.id);
+            if (dbCategory) {
+              return {
+                ...category,
+                selected: dbCategory.selected,
+                code: dbCategory.code
+              };
+            }
+            return category;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   const generateUniqueCode = () => {
     let code;
     do {
@@ -120,8 +147,8 @@ const CategorySelector = () => {
     return code;
   };
 
-   const startPress = (categoryId) => {
-    if (hasSelected) {
+  const startPress = (categoryId) => {
+    if (hasSelected || isSelecting) {
       setHasSelectedMessage(true);
       setShowModal(true);
       return;
@@ -131,7 +158,6 @@ const CategorySelector = () => {
     setPressedId(categoryId);
     setProgress(0);
     
-    // Clear any existing intervals/timers
     if (progressInterval) clearInterval(progressInterval);
     if (pressTimer) clearTimeout(pressTimer);
     
@@ -165,29 +191,12 @@ const CategorySelector = () => {
   };
 
   const handleLongPressComplete = async (categoryId) => {
-    if (hasSelected) return;
+    if (hasSelected || isSelecting) return;
     
+    setIsSelecting(true);
     const code = generateUniqueCode();
     const selectedCategory = categories.find(c => c.id === categoryId);
     
-    // Update local state
-    setCategories(prevCategories => 
-      prevCategories.map(category => 
-        category.id === categoryId
-          ? { ...category, selected: true, code: code }
-          : category
-      )
-    );
-    
-    setCurrentSelection({
-      category: selectedCategory,
-      code: code
-    });
-    
-    setHasSelected(true);
-    localStorage.setItem('hasSelected', 'true');
-    
-    // Notify server
     try {
       const response = await fetch('/api/selection', {
         method: 'POST',
@@ -195,21 +204,47 @@ const CategorySelector = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          categoryId: selectedCategory.id,
+          categoryId,
           code,
           categoryTitle: selectedCategory.title,
           deviceId
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to send selection');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setCategories(prevCategories => 
+          prevCategories.map(category => 
+            category.id === categoryId 
+              ? { ...category, selected: true, code: code }
+              : category
+          )
+        );
+        
+        setHasSelected(true);
+        localStorage.setItem('hasSelected', 'true');
+        
+        setCurrentSelection({
+          category: selectedCategory,
+          code: code
+        });
+        
+        setShowModal(true);
+      } else {
+        // Category was already selected by someone else
+        setShowErrorModal(true);
+        // Refresh categories to get latest state
+        fetchCategories();
+      }
     } catch (error) {
       console.error('Error:', error);
+      setShowErrorModal(true);
+    } finally {
+      setIsSelecting(false);
+      setPressedId(null);
+      setProgress(0);
     }
-    
-    setPressedId(null);
-    setProgress(0);
-    setShowModal(true);
   };
 
   if (isLoading) {
@@ -227,6 +262,7 @@ const CategorySelector = () => {
 
       <div className="max-w-md mx-auto p-4 text-center text-white">
         <img src="https://www.botbros.ai/images/bb-logo.png" className="inline" width="60%" />
+        <small>long press for 2 seconds to select a category</small>
       </div>
       <div className="max-w-md mx-auto p-4">
         {categories.map((category) => {
@@ -337,6 +373,24 @@ const CategorySelector = () => {
           )}
           <AlertDialogFooter>
             <AlertDialogAction>Close</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Too slow!</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="text-center py-6">
+            <p className="text-gray-600">
+              Someone selected this category just before you. Please choose another category.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowErrorModal(false)}>
+              OK
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

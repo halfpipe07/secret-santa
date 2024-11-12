@@ -1,5 +1,4 @@
 import Pusher from 'pusher';
-// import sgMail from '@sendgrid/mail';
 import prisma from '@/lib/prisma';
 
 const pusher = new Pusher({
@@ -10,52 +9,57 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 export async function POST(request) {
   const body = await request.json();
   const { categoryId, code, categoryTitle, deviceId } = body;
 
   try {
-    // Update database
-    await prisma.category.update({
-      where: { id: categoryId },
-      data: {
-        selected: true,
-        code: code,
-        deviceId: deviceId
+    // Use a transaction with pessimistic locking to handle race conditions
+    const result = await prisma.$transaction(async (prisma) => {
+      // First, get the category with a lock
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        select: { selected: true },
+      });
+
+      // Check if category is already selected
+      if (category.selected) {
+        return { success: false, error: 'Category already selected' };
       }
+
+      // If not selected, update it
+      await prisma.category.update({
+        where: { id: categoryId },
+        data: {
+          selected: true,
+          code: code,
+          deviceId: deviceId
+        }
+      });
+
+      return { success: true };
+    }, {
+      isolationLevel: 'Serializable' // This ensures complete isolation
     });
 
-    // Send real-time update
+    if (!result.success) {
+      return Response.json(result, { status: 409 }); // Conflict status code
+    }
+
+    // If successful, send real-time update via Pusher
     await pusher.trigger('category-channel', 'category-selected', {
       categoryId,
       code
     });
 
-    // Send email
-    // const msg = {
-    //   to: process.env.NOTIFICATION_EMAIL,
-    //   from: 'your-verified-sender@yourdomain.com',
-    //   subject: 'New Category Selection',
-    //   html: `
-    //     <h2>New Category Selection</h2>
-    //     <p>Category: <strong>${categoryTitle}</strong></p>
-    //     <p>Code: <strong>${code}</strong></p>
-    //     <p>Device ID: ${deviceId}</p>
-    //     <p>Time: ${new Date().toLocaleString()}</p>
-    //   `,
-    // };
-
-    // await sgMail.send(msg);
     return Response.json({ success: true });
+
   } catch (error) {
     console.error('Error:', error);
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// Add GET endpoint to fetch initial state
 export async function GET() {
   try {
     const categories = await prisma.category.findMany();
