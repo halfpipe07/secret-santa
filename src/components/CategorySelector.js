@@ -262,7 +262,7 @@ const CategorySelector = () => {
 
       <div className="max-w-md mx-auto p-4 text-center text-white">
         <img src="https://www.botbros.ai/images/bb-logo.png" className="inline" width="60%" />
-        <small>long press for 2 seconds to select a category</small>
+        <div><small>long press for 2 seconds</small></div>
       </div>
       <div className="max-w-md mx-auto p-4">
         {categories.map((category) => {
