@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogAction, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 import Pusher from 'pusher-js';
 
 const CategorySelector = () => {
@@ -28,8 +29,8 @@ const CategorySelector = () => {
   const [usedCodes] = useState(new Set());
   const [pressTimer, setPressTimer] = useState(null);
   const [progressInterval, setProgressInterval] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial state of categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -62,11 +63,12 @@ const CategorySelector = () => {
             body: JSON.stringify({ categories }),
           });
         }
+        setIsLoading(false);  // Add this line
       } catch (error) {
         console.error('Error fetching categories:', error);
+        setIsLoading(false);  // Add this line
       }
     };
-
     fetchCategories();
   }, []);
 
@@ -210,6 +212,16 @@ const CategorySelector = () => {
     setShowModal(true);
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-lg text-gray-600">Loading categories...</span>
+      </div>
+    );
+  }
+
+
   return (
      <>
 
@@ -241,7 +253,7 @@ const CategorySelector = () => {
               className={`
                 relative mb-4 p-4 rounded-lg border-2 overflow-hidden select-none touch-none
                 ${category.selected 
-                  ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
+                  ? 'bg-gray-200 border-gray-300 cursor-not-allowed' 
                   : hasSelected
                   ? 'bg-gray-50 border-gray-300 cursor-not-allowed'
                   : 'bg-white border-blue-500 cursor-pointer hover:bg-blue-50'
@@ -258,7 +270,9 @@ const CategorySelector = () => {
                 />
               )}
               <div className="relative z-10">
-                <h3 className="text-lg font-semibold">{category.title}</h3>
+                <h3 className={`text-lg font-semibold ${category.selected ? 'line-through text-gray-500' : ''}`}>
+                  {category.title}
+                </h3>
                 <p className="text-gray-600">{category.subtitle}</p>
               </div>
             </div>
@@ -294,6 +308,11 @@ const CategorySelector = () => {
             </>
           ) : (
             <>
+              <AlertDialogHeader>
+                <div className="sr-only">
+                  <AlertDialogTitle>Category Selected!</AlertDialogTitle>
+                </div>
+              </AlertDialogHeader>
               <div className="text-center py-6">
                 <div className="mb-6">
                   <p className="text-sm text-gray-600 mb-1">You have selected:</p>
@@ -316,6 +335,9 @@ const CategorySelector = () => {
               </div>
             </>
           )}
+          <AlertDialogFooter>
+            <AlertDialogAction>Close</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>

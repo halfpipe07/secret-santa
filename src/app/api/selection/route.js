@@ -1,5 +1,5 @@
 import Pusher from 'pusher';
-import sgMail from '@sendgrid/mail';
+// import sgMail from '@sendgrid/mail';
 import prisma from '@/lib/prisma';
 
 const pusher = new Pusher({
@@ -10,7 +10,7 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export async function POST(request) {
   const body = await request.json();
@@ -34,20 +34,20 @@ export async function POST(request) {
     });
 
     // Send email
-    const msg = {
-      to: process.env.NOTIFICATION_EMAIL,
-      from: 'your-verified-sender@yourdomain.com',
-      subject: 'New Category Selection',
-      html: `
-        <h2>New Category Selection</h2>
-        <p>Category: <strong>${categoryTitle}</strong></p>
-        <p>Code: <strong>${code}</strong></p>
-        <p>Device ID: ${deviceId}</p>
-        <p>Time: ${new Date().toLocaleString()}</p>
-      `,
-    };
+    // const msg = {
+    //   to: process.env.NOTIFICATION_EMAIL,
+    //   from: 'your-verified-sender@yourdomain.com',
+    //   subject: 'New Category Selection',
+    //   html: `
+    //     <h2>New Category Selection</h2>
+    //     <p>Category: <strong>${categoryTitle}</strong></p>
+    //     <p>Code: <strong>${code}</strong></p>
+    //     <p>Device ID: ${deviceId}</p>
+    //     <p>Time: ${new Date().toLocaleString()}</p>
+    //   `,
+    // };
 
-    await sgMail.send(msg);
+    // await sgMail.send(msg);
     return Response.json({ success: true });
   } catch (error) {
     console.error('Error:', error);
